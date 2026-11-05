@@ -1214,7 +1214,9 @@ function toast(msg, kind="up"){
 /* ---------- Helpers de stock ---------- */
 function prodById(id){ return db.productos.find(p=>p.id===id); }
 function clienteById(id){ return db.clientes.find(c=>c.id===id); }
-function clienteLinea(c){ return c ? (c.empresa ? `${c.nombre} · ${c.empresa}` : c.nombre) : ""; }
+/* empresa distinta del nombre (si el usuario cargó lo mismo en los dos, se muestra una sola vez) */
+function clienteEmpresaExtra(c){ const e=String((c&&c.empresa)||"").trim(); return (e && e.toLowerCase()!==String(c.nombre||"").trim().toLowerCase()) ? e : ""; }
+function clienteLinea(c){ return c ? (clienteEmpresaExtra(c) ? `${c.nombre} · ${clienteEmpresaExtra(c)}` : c.nombre) : ""; }
 function clienteDireccion(c){
   if(!c) return "";
   const V = (typeof nombreVis==="function") ? nombreVis : (x=> x);   // v146: mayúsculas al mostrar

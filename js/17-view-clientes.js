@@ -13,7 +13,7 @@ function openClientePicker(anchor){
     let lista = db.clientes.slice().sort((a,b)=>String(a.nombre||"").localeCompare(String(b.nombre||""),"es"));
     if(q) lista = lista.filter(c=> ((c.nombre||"")+" "+(c.empresa||"")+" "+(c.email||"")).toLowerCase().includes(q));
     let html = lista.map(c=>`<button type="button" class="ppick-item${c.id===draft.clienteId?" active":""}" data-pickcli="${c.id}">
-      <span class="pi-name">${esc(c.nombre)}${c.empresa?` · ${esc(c.empresa)}`:""}</span>${clienteIncompleto(c)?`<span class="cli-inc-dot" title="${t("cl.inc.badge")}">${ICO.warn}</span>`:""}</button>`).join("");
+      <span class="pi-name">${esc(c.nombre)}${clienteEmpresaExtra(c)?` · ${esc(clienteEmpresaExtra(c))}`:""}</span>${clienteIncompleto(c)?`<span class="cli-inc-dot" title="${t("cl.inc.badge")}">${ICO.warn}</span>`:""}</button>`).join("");
     if(!lista.length) html = `<div class="ppick-empty">${t("md.pick.nocustmatch")}</div>`;
     html += `<button type="button" class="ppick-item new" data-pickcli="__new">${ICO.plus.replace("<svg",'<svg width="16" height="16" style="flex-shrink:0"')}${t("cl.pick.addcust")}</button>`;
     listEl.innerHTML = html;
@@ -966,7 +966,7 @@ function verDoc(tipo,id){
   const einDet = (cli && cli.ein) || (d.clienteId && clienteById(d.clienteId) && clienteById(d.clienteId).ein) || "";
   let quien;
   if(!isC && cli){
-    quien = `<b>${esc(nombreVis(cli.nombre)||cli.nombre||"—")}</b>${cli.empresa?` · ${esc(cli.empresa)}`:""}
+    quien = `<b>${esc(nombreVis(cli.nombre)||cli.nombre||"—")}</b>${clienteEmpresaExtra(cli)?` · ${esc(clienteEmpresaExtra(cli))}`:""}
       ${clienteDireccion(cli)?`<br>${esc(clienteDireccion(cli))}`:""}
       ${(cli.email||cli.telefono)?`<br>${esc(cli.email||"")}${cli.email&&cli.telefono?" · ":""}${esc(cli.telefono||"")}`:""}
       ${einDet?`<br>${t("md.cli.ein")}: ${esc(einDet)}`:""}`;
