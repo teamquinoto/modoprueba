@@ -13,7 +13,7 @@
    el mensaje {type:"SKIP_WAITING"} y ahí sí se activa y recarga. Así
    nadie pierde una carga a medias por un refresh sorpresa.
    ============================================================ */
-const CACHE = "modoprueba-v3";   // subí este número en cada actualización para que aparezca el cartel "Actualizar"
+const CACHE = "modoprueba-v4";   // subí este número en cada actualización para que aparezca el cartel "Actualizar"
 
 const ASSETS = [
   "./",
