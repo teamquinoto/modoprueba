@@ -67,6 +67,7 @@ function viewDatos(){
         <div class="cfg-list">
           ${row(t("cfg.session"), sesion, `<button class="btn sm" data-syncnow>${ICO.sync||""}${t("dat.syncnow")}</button><button class="btn sm" data-logout>${ICO.logout||""}${t("tb.logout")}</button>`)}
           ${row(t("dat.grp.backup"), t("dat.backup.sub"), `<button class="btn sm" data-export>${ICO.download||""}${t("dat.exportjson")}</button>`)}
+          ${(typeof demoRowHTML==="function") ? demoRowHTML(row) : ""}
           ${(isAdmin() && session) ? row(t("pap.title"), t("pap.sub"), `<button class="btn sm" data-papelera>${ICO.trash||""}${t("pap.open")}</button>`) : ""}
           ${isAdmin() ? row(msgLoc({es:"Historial de comisiones",en:"Commission history"}),
               msgLoc({es:"Cada cambio de % de comisión (por defecto o por vendedor) queda registrado con fecha y usuario.",
@@ -143,6 +144,7 @@ function wire(){
   const exp=m.querySelector("[data-export]"); if(exp) exp.onclick=exportJSON;
   const pap=m.querySelector("[data-papelera]"); if(pap) pap.onclick=()=> openPapelera();   // v96
   const clg=m.querySelector("[data-comlog]"); if(clg) clg.onclick=()=> openComisionLog();   // v130
+  const dmo=m.querySelector("[data-demo]"); if(dmo) dmo.onclick=()=> demoCargar();
   m.querySelectorAll("[data-savecfg]").forEach(cfg=> cfg.onclick=()=>{
     const monEl=document.getElementById("cfgMon"); if(monEl){ db.config.moneda=(monEl.value||"$").trim()||"$"; }
     const fe=document.getElementById("cfgFac"); if(fe){ const fi=parseInt(fe.value,10); if(!isNaN(fi)&&fi>0) db.config.facturaInicio=fi; }   // v139/v86: ya no se muestra (la numeración sigue sola)
