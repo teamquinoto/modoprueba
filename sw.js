@@ -13,12 +13,13 @@
    el mensaje {type:"SKIP_WAITING"} y ahí sí se activa y recarga. Así
    nadie pierde una carga a medias por un refresh sorpresa.
    ============================================================ */
-const CACHE = "modoprueba-v1";   // subí este número en cada actualización para que aparezca el cartel "Actualizar"
+const CACHE = "modoprueba-v2";   // subí este número en cada actualización para que aparezca el cartel "Actualizar"
 
 const ASSETS = [
   "./",
   "./index.html",
   "./config.js",
+  "./js/000-aislar.js",
   "./styles.css",
   "./configuracion.css",
   "./guia.css",
@@ -100,7 +101,8 @@ self.addEventListener("install", e => {
 self.addEventListener("activate", e => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+      // solo las cachés de esta app (otras apps de la misma cuenta comparten dominio)
+      Promise.all(keys.filter(k => k.startsWith("modoprueba-") && k !== CACHE).map(k => caches.delete(k)))
     ).then(() => self.clients.claim())
   );
 });
