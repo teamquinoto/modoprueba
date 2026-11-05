@@ -6,5 +6,6 @@
            Ej: "https://modoprueba-api.tuusuario.workers.dev"
    ============================================================ */
 window.APP_CONFIG = {
-  apiUrl: "https://modoprueba-api.teamquinoto.workers.dev"
+  apiUrl: "https://modoprueba-api.teamquinoto.workers.dev",
+  demo: true   // muestra "Cargar demo" en Configuración. En la app de un cliente real: false
 };

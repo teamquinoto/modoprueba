@@ -43,6 +43,10 @@ Repetí todo con otros nombres (otro repo, otra base D1, otro Worker). Cada clie
 ### Actualizaciones
 Cuando subas cambios, en `sw.js` cambiá `modoprueba-v1` → `modoprueba-v2` (y `build v1` en `index.html`). Así a los usuarios les aparece el cartel "Actualizar".
 
+### Datos de demostración
+Con `demo: true` en `config.js` aparece en **Configuración → General** el botón **Cargar demo**: carga un año completo de datos ficticios (`demo.json`) y lo sube al servidor. Las fechas se corren solas para que terminen ayer. Se puede volver a cargar cuando quieras para dejar la demo como nueva.
+En la instalación de un cliente real poné `demo: false` y no subas `demo.json`.
+
 ### Personalizar
 - Nombre: buscá "Modo Prueba" en `index.html`, `manifest.json` y `js/00e-i18n-guia.js`.
 - Sociedades (las que compran): `js/01-core.js`, arriba de todo (`STORES`). Cambiá solo los `name`.
