@@ -1,0 +1,473 @@
+/* ============================================================
+   VISTA: Datos
+   ============================================================ */
+/* v138 · textos de Configuración → General (reordenada) */
+(function(){
+  try{
+    Object.assign(I18N.en, {
+      "cfg.title":"General settings", "cfg.sub":"Company details, collection accounts and your account.",
+      "cfg.company":"Company & invoicing", "cfg.company.hint":"These details print on the PDF invoices.",
+      "cfg.contact":"Company details", "cfg.save":"Save changes", "cfg.saved.hint":"Changes apply to new documents.",
+      "cfg.acct":"Account & data", "cfg.acct.hint":"Your session, sync and backups.",
+      "cfg.session":"Session", "cfg.session.sub":"{u} · {role} · inventory {sp}, rev {rev}{dirty}",
+      "cfg.numbering":"Numbering · first number", "cfg.num.fac":"Invoice", "cfg.num.remu":"Delivery note U", "cfg.num.rema":"Delivery note A",
+      "cfg.inv.u":"Each document starts from this number. Only used until the first one is issued."
+    });
+    Object.assign(I18N.es, {
+      "cfg.title":"Configuración general", "cfg.sub":"Datos de la empresa, cuentas de cobro y tu cuenta.",
+      "cfg.company":"Empresa y facturación", "cfg.company.hint":"Estos datos salen en la factura en PDF.",
+      "cfg.contact":"Datos de la empresa", "cfg.save":"Guardar cambios", "cfg.saved.hint":"Los cambios aplican a los documentos nuevos.",
+      "cfg.acct":"Cuenta y datos", "cfg.acct.hint":"Tu sesión, la sincronización y las copias.",
+      "cfg.session":"Sesión", "cfg.session.sub":"{u} · {role} · inventario {sp}, rev {rev}{dirty}",
+      "cfg.numbering":"Numeración · número inicial", "cfg.num.fac":"Factura", "cfg.num.remu":"Remito U", "cfg.num.rema":"Remito A",
+      "cfg.inv.u":"Cada documento arranca desde este número. Solo se usa hasta emitir el primero."
+    });
+  }catch(e){ console.warn("cfg i18n", e); }
+})();
+function viewDatos(){
+  const conf = syncState==="conflict";
+  const roleLbl = isAdmin() ? t("dat.acct.admin") : t("dat.acct.seller",{name:esc((session&&session.name)||"—")});
+  /* v138 · Configuración → General reordenada (igual en las dos apps):
+       fila 1 · Empresa y facturación | Cuentas de cobro (misma altura)
+       fila 2 · Cuenta y datos, a lo ancho (lista de ajustes)
+     v139/v86: se quitó "Numeración": ya están facturando y cada documento sigue solo
+     desde el último emitido (los valores guardados no se tocan).
+     Estilos en configuracion.css. */
+  const em = db.config.emisor||{};
+  const row = (tit,sub,acts)=>`<div class="cfg-row"><div class="cfg-row-txt"><b>${tit}</b><span>${sub}</span></div><div class="cfg-row-acts">${acts}</div></div>`;
+  const fld = (id,label,val,cls,extra)=>{ const num = !!(cls && cls.includes("num")), c = num ? (cls||"").replace("num","").trim() : (cls||"");
+    return `<div class="field ${c}"><label for="${id}">${label}${extra||""}</label><input class="inp${num?" num":""}" id="${id}" value="${esc(val)}"${num?' inputmode="numeric"':""}></div>`; };
+  const sesion = t("cfg.session.sub",{u:`<b>${esc(session?session.user:"—")}</b>`, role:esc(roleLbl), sp:`<b>${esc(session?session.space:"main")}</b>`, rev:syncMeta.syncedRev, dirty:syncMeta.dirty?t("dat.inv.dirty"):""});
+  return `
+  <div class="head"><div class="title"><h2>${t("cfg.title")}</h2><p>${t("cfg.sub")}</p></div></div>
+
+  <div class="cfg-grid">
+    <section class="panel cfg-card">
+      <div class="cfg-head"><div><h3>${t("cfg.company")}</h3><p>${t("cfg.company.hint",{rem:""})}</p></div></div>
+      <div class="cfg-body">
+        <div class="cfg-form">
+          ${fld("cfgEmNom", t("dat.issuer.name"), em.nombre||"", "cfg-wide")}
+          ${fld("cfgEmDir", t("dat.issuer.addr"), em.direccion||"", "cfg-wide")}
+          ${fld("cfgEmMail", t("dat.issuer.email"), em.email||"")}
+          ${fld("cfgEmTel", t("dat.issuer.phone"), em.tel||"")}
+        </div>
+      </div>
+      <div class="cfg-foot"><span class="hint">${t("cfg.saved.hint")}</span><button class="btn primary sm" data-savecfg>${ICO.save||""}${t("cfg.save")}</button></div>
+    </section>
+
+    ${cuentasCobroCardHTML("")}
+
+      <section class="panel cfg-card cfg-full">
+        <div class="cfg-head"><div><h3>${t("cfg.acct")}</h3><p>${t("cfg.acct.hint")}</p></div><span class="hint" data-syncchip>●</span></div>
+        ${conf ? `<div class="banner warn cfg-conf"><div>${t("dat.conf.title")}
+            <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn sm" data-confserver>${t("dat.conf.takeserver")}</button>
+              <button class="btn sm danger" data-conflocal>${t("dat.conf.overwrite")}</button>
+            </div></div></div>`:""}
+        <div class="cfg-list">
+          ${row(t("cfg.session"), sesion, `<button class="btn sm" data-syncnow>${ICO.sync||""}${t("dat.syncnow")}</button><button class="btn sm" data-logout>${ICO.logout||""}${t("tb.logout")}</button>`)}
+          ${row(t("dat.grp.backup"), t("dat.backup.sub"), `<button class="btn sm" data-export>${ICO.download||""}${t("dat.exportjson")}</button>`)}
+          ${(isAdmin() && session) ? row(t("pap.title"), t("pap.sub"), `<button class="btn sm" data-papelera>${ICO.trash||""}${t("pap.open")}</button>`) : ""}
+          ${isAdmin() ? row(msgLoc({es:"Historial de comisiones",en:"Commission history"}),
+              msgLoc({es:"Cada cambio de % de comisión (por defecto o por vendedor) queda registrado con fecha y usuario.",
+                      en:"Every commission % change (default or per seller) is logged with date and user."}),
+              `<button class="btn sm" data-comlog>${ICO.list}${msgLoc({es:"Ver registro",en:"View log"})}</button>`) : ""}
+        </div>
+      </section>
+  </div>`;
+}
+/* v130 · Registro de cambios de comisión (config.commissionLog), más nuevo arriba. */
+function openComisionLog(){
+  const L=(es,en)=>msgLoc({es,en});
+  const pc=x=> (x==null) ? "—" : (round2((+x||0)*100)+"%");
+  const log=((db.config && db.config.commissionLog) || []).slice().reverse();
+  const qui=e=>{
+    if(e.tipo==="default") return L("Tasa por defecto","Default rate");
+    if(e.tipo==="ventas")  return L(`${e.cantidad} ventas ya cargadas`,`${e.cantidad} existing sales`);
+    const n=esc(e.nombre||e.vendedorId||"—");
+    return e.tipo==="alta" ? L(`Alta de vendedor: ${n}`,`New seller: ${n}`) : L(`Vendedor: ${n}`,`Seller: ${n}`);
+  };
+  const de=e=> e.tipo==="ventas" ? esc(Object.entries(e.antes||{}).map(([k,c])=>`${c} × ${k}`).join(", ")) : pc(e.de);
+  const filas=log.map(e=>`<tr>
+      <td>${esc(String(e.fecha||"").slice(0,16).replace("T"," "))}</td>
+      <td>${esc(e.usuario||"—")}</td>
+      <td>${qui(e)}${e.nota?`<div class="hint u-fs-xs">${esc(e.nota)}</div>`:""}</td>
+      <td>${de(e)}</td><td><b>${pc(e.a)}</b></td></tr>`).join("");
+  const body = log.length
+    ? `<div class="table-scroll"><table class="fintbl"><thead><tr>
+        <th>${L("Fecha (UTC)","Date (UTC)")}</th><th>${L("Usuario","User")}</th><th>${L("Qué cambió","What changed")}</th>
+        <th>${L("Antes","Before")}</th><th>${L("Ahora","Now")}</th></tr></thead><tbody>${filas}</tbody></table></div>`
+    : `<p class="hint">${L("Todavía no hay cambios registrados.","No changes logged yet.")}</p>`;
+  buildModal(L("Historial de comisiones","Commission history"),
+    `<p class="hint u-m0 u-mb3">${L("Las ventas ya cargadas conservan la tasa con la que se cargaron; un cambio aplica a las ventas nuevas.","Existing sales keep the rate they were booked at; a change applies to new sales.")}</p>`+body,
+    [{ cls:"btn", label:L("Cerrar","Close"), act:()=>closeModal() }], true);
+}
+/* ---------- utilidades UI ---------- */
+function esc(s){ return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function emptyState(t,h){ return `<div class="empty"><div class="big">∅</div><p class="u-fw600 u-text">${t}</p><p class="hint">${h}</p></div>`; }
+
+/* ============================================================
+   Eventos de la vista
+   ============================================================ */
+function wire(){
+  const m = document.getElementById("main");
+  m.querySelectorAll("[data-open]").forEach(b=> b.onclick=()=> openDoc(b.dataset.open));
+  m.querySelectorAll("[data-newp]").forEach(b=> b.onclick=()=> openProd());
+  m.querySelectorAll("[data-ficha]").forEach(tr=> tr.onclick=()=> openFicha(tr.dataset.ficha));
+  wireDashFiltros();
+  wireProd();
+  wireAnalisis();
+  wireDocFiltros();
+  wireMovFiltros();
+  wireClientes();
+  // Alerta de reposición (banner + tarjeta): click / Enter / Espacio -> maestro filtrado
+  m.querySelectorAll("[data-goto-pedir]").forEach(el=>{
+    el.style.cursor="pointer";
+    el.onclick=irAPedidos;
+    el.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); irAPedidos(); } };
+  });
+  m.querySelectorAll("[data-editp]").forEach(b=> b.onclick=(e)=>{ e.stopPropagation(); openProd(b.dataset.editp); });
+  m.querySelectorAll("[data-invret]").forEach(b=> b.onclick=(e)=>{ e.stopPropagation(); openReturnFromInvestment(b.dataset.invret); });
+  m.querySelectorAll("[data-import]").forEach(b=> b.onclick=()=> openImport());
+  const adj=m.querySelector("[data-adjust]"); if(adj) adj.onclick=()=> openAjuste();
+  m.querySelectorAll("[data-delaj]").forEach(b=> b.onclick=()=> deleteAjuste(b.dataset.delaj));
+  m.querySelectorAll("[data-vdoc]").forEach(b=> b.onclick=()=>{
+    const [t,id]=b.dataset.vdoc.split(":"); verDoc(t,id);
+  });
+  m.querySelectorAll("[data-editdoc]").forEach(b=> b.onclick=()=>{
+    const [t,id]=b.dataset.editdoc.split(":"); editDoc(t,id);
+  });
+  m.querySelectorAll("[data-deldoc]").forEach(b=> b.onclick=()=>{
+    const [t,id]=b.dataset.deldoc.split(":"); deleteDoc(t,id);
+  });
+  const exp=m.querySelector("[data-export]"); if(exp) exp.onclick=exportJSON;
+  const pap=m.querySelector("[data-papelera]"); if(pap) pap.onclick=()=> openPapelera();   // v96
+  const clg=m.querySelector("[data-comlog]"); if(clg) clg.onclick=()=> openComisionLog();   // v130
+  m.querySelectorAll("[data-savecfg]").forEach(cfg=> cfg.onclick=()=>{
+    const monEl=document.getElementById("cfgMon"); if(monEl){ db.config.moneda=(monEl.value||"$").trim()||"$"; }
+    const fe=document.getElementById("cfgFac"); if(fe){ const fi=parseInt(fe.value,10); if(!isNaN(fi)&&fi>0) db.config.facturaInicio=fi; }   // v139/v86: ya no se muestra (la numeración sigue sola)
+    const commEl=document.getElementById("cfgComm");   // sólo lo renderiza el admin
+    if(commEl){ const pct=parseNum(commEl.value); if(!isNaN(pct)) db.config.commissionRate = Math.min(1, Math.max(0, round2(pct)/100)); }
+    db.config.emisor = {
+      nombre:(document.getElementById("cfgEmNom").value||"").trim(),
+      direccion:(document.getElementById("cfgEmDir").value||"").trim(),
+      email:(document.getElementById("cfgEmMail").value||"").trim(),
+      tel:(document.getElementById("cfgEmTel").value||"").trim()
+    };
+    save(); toast(t("dat.tt.saved")); render();
+  });
+
+  // --- cuenta / sincronización ---
+  const sNow=m.querySelector("[data-syncnow]"); if(sNow) sNow.onclick=()=> pullNow();
+  const lo=m.querySelector("[data-logout]"); if(lo) lo.onclick=()=> logout();
+  const cl=m.querySelector("[data-conflocal]"); if(cl) cl.onclick=()=>resolveConflict(true);
+  const cs=m.querySelector("[data-confserver]"); if(cs) cs.onclick=()=>resolveConflict(false);
+
+  // --- vendedores (ABM, admin) ---
+  m.querySelectorAll("[data-vname]").forEach(inp=> inp.onchange=()=>{
+    const v=vendedorById(inp.dataset.vname); if(v){ v.nombre=(inp.value||"").trim()||v.id; save(); toast(t("dat.tt.renamed")); }
+  });
+  m.querySelectorAll("[data-vrate]").forEach(inp=> inp.onchange=()=>{
+    const v=vendedorById(inp.dataset.vrate); if(!v) return;
+    const pct=parseNum(inp.value);
+    if(isNaN(pct)){ inp.value=String(round2((v.rate||0)*100)); return; }
+    v.rate = Math.min(1, Math.max(0, round2(pct)/100));
+    save(); toast(t("dat.tt.commset",{name:v.nombre,p:round2(v.rate*100)}));
+  });
+  m.querySelectorAll("[data-vdel]").forEach(b=> b.onclick=()=>{
+    const id=b.dataset.vdel;
+    if(!confirm(t("dat.cf.delseller",{name:vendedorNombre(id)}))) return;
+    db.config.vendedores = vendedores().filter(v=>v.id!==id);
+    save(); toast(t("dat.tt.sellerremoved"),"warn"); render();
+  });
+  const vAdd=m.querySelector("#vAdd"); if(vAdd) vAdd.onclick=()=>{
+    let id=(document.getElementById("vNewId").value||"").trim().toLowerCase().replace(/[^a-z0-9_-]/g,"");
+    const nombre=(document.getElementById("vNewName").value||"").trim();
+    const rpct=parseNum(document.getElementById("vNewRate").value);
+    const rate = isNaN(rpct) ? (db.config.commissionRate||0) : Math.min(1, Math.max(0, round2(rpct)/100));
+    if(!id){ toast(t("dat.tt.enterid"),"warn"); return; }
+    if(vendedorById(id)){ toast(t("dat.tt.ididexists"),"warn"); return; }
+    db.config.vendedores = vendedores().concat([{ id, nombre: nombre||id, rate }]);
+    save(); toast(t("dat.tt.selleradded")); render();
+  };
+
+  if(document.getElementById("uAdd")) wireUsuariosView();
+  paintSync();
+}
+
+/* ============================================================
+   USUARIOS (traído de select, adaptado a admin + vendedores)
+   ============================================================ */
+let _usrCache = null;
+
+async function apiUsers(method, body, qs){
+  const res = await apiFetch(apiBase()+"/users"+(qs||""), {
+    method, headers: authHeaders(), body: body?JSON.stringify(body):undefined
+  });
+  if(res.status===401){ forceLogout(); throw new Error("401"); }
+  const j = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(srvErrText(j,res.status));
+  return j;
+}
+function usrRoleLabel(r){ return r==="admin"?t("usr.role.admin"):(r==="store"?t("usr.role.store"):(r==="editor"?t("usr.role.editor"):t("usr.role.seller"))); }
+function clienteNombre(id){ const c=(db.clientes||[]).find(x=>x.id===id); return c?(c.nombre||c.id):(id||"\u2014"); }
+
+function viewUsuarios(){
+  const cliOpts=(db.clientes||[]).slice().sort((a,b)=>String(a.nombre||"").localeCompare(String(b.nombre||"")))
+    .map(c=>`<option value="${esc(c.id)}">${esc(c.nombre||c.id)}</option>`).join("");
+  return `
+  <div class="head"><div class="title"><h2>${t("usr.title")}</h2><p>${t("usr.hint")}</p></div></div>
+
+  <div class="panel">
+    <div class="phead"><h3>${t("usr.h.new")}</h3></div>
+    <div class="grid-form">
+      <p class="u-m0 hint">${t("usr.desc")}</p>
+      <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+        <div class="field" style="flex:1 1 150px"><label>${t("usr.f.name")}</label><input class="inp" id="uNewName"></div>
+        <div class="f-field field"><label>${t("usr.f.user")}</label><input class="inp" id="uNewUser" placeholder="${t("usr.f.user.ph")}"></div>
+        <div class="f-field field"><label for="uNewPass">${t("usr.f.pass")}</label>${passFieldHTML("uNewPass")}</div>
+        <div class="field" style="flex:0 0 130px"><label>${t("usr.f.role")}</label>
+          <select class="inp" id="uNewRole">
+            <option value="seller">${t("usr.role.seller")}</option>
+            <option value="editor">${t("usr.role.editor")}</option>
+            <option value="admin">${t("usr.role.admin")}</option>
+          </select></div>
+        <div class="field u-when-seller" style="flex:0 0 90px"><label>${t("usr.f.comm")}</label><input class="inp num" id="uComm" placeholder="${esc(String(round2((db.config.commissionRate||0)*100)))}"></div>
+        <button class="btn primary" id="uAdd" style="flex:0 0 auto">${ICO.adduser}${t("usr.add")}</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="phead"><h3>${t("usr.h.active")}</h3></div>
+    <div class="u-p5">
+      <div id="usrCards"><p class="hint">${t("usr.loading")}</p></div>
+      <div id="vendOrphans"></div>
+    </div>
+  </div>
+  ${typeof seg2faPanelHTML==="function" ? seg2faPanelHTML() : ""}`;
+}
+
+function usrInitial(u){ const s=String(u.name||u.user||"?").trim(); return (s[0]||"?").toUpperCase(); }
+function usrSubline(u){
+  const role=usrRoleLabel(u.role);
+  if(u.role==="seller"){ const v=vendedorById(u.vendedorId); const r=v?round2((v.rate!=null?v.rate:(db.config.commissionRate||0))*100):null; return "@"+u.user+" \u00b7 "+role+(r!=null?(" \u00b7 "+r+"% com."):""); }
+  if(u.role==="store"){ return "@"+u.user+" \u00b7 "+role+" \u00b7 "+clienteNombre(u.clienteId); }
+  return "@"+u.user+" \u00b7 "+role+(u.totp?" \u00b7 2FA":"");
+}
+/* v102 · Una sola lista: accesos (admins, vendedores, clientes) + vendedores que sólo existen
+   para atribuir comisión (sin usuario en la app). Antes estos iban en una lista aparte. */
+function usrCardHTML(o){
+  return `<div class="usr-card" ${o.attr} role="button" tabindex="0">
+      <span class="usr-av${o.muted?" muted":""}">${esc(o.ini)}</span>
+      <span class="usr-txt">
+        <b class="u-nowrap u-ovh u-ellipsis">${esc(o.name)}</b>
+        <span class="u-nowrap u-ovh u-ellipsis hint">${esc(o.sub)}${o.tag?` <span class="pill usr-noacc">${esc(o.tag)}</span>`:""}</span>
+      </span>
+      <span class="usr-chev" aria-hidden="true">\u203a</span>
+    </div>`;
+}
+function renderUsrCards(users){
+  users=users||[];
+  const used=new Set(users.filter(u=>u.role==="seller").map(u=>String(u.vendedorId||"").toLowerCase()));
+  const orphans=vendedores().filter(v=> !used.has(String(v.id).toLowerCase()));
+  const orden={admin:0,seller:1,store:2};
+  const items=[
+    ...users.map(u=>({ k:(orden[u.role]??3)+"|"+String(u.name||u.user).toLowerCase(),
+      html:usrCardHTML({attr:`data-uedit="${esc(u.user)}"`, ini:usrInitial(u), name:u.name||u.user, sub:usrSubline(u)}) })),
+    ...orphans.map(v=>{ const r=round2((v.rate!=null?v.rate:(db.config.commissionRate||0))*100);
+      return { k:"1|"+String(v.nombre||v.id).toLowerCase(),
+        html:usrCardHTML({attr:`data-vedit="${esc(v.id)}"`, ini:usrInitial({name:v.nombre||v.id}), name:v.nombre||v.id, muted:true,
+          sub:v.id+" \u00b7 "+usrRoleLabel("seller")+" \u00b7 "+r+"% com.", tag:t("usr.noaccess")}) }; })
+  ].sort((x,y)=> x.k<y.k?-1:x.k>y.k?1:0);
+  if(!items.length) return `<p class="hint">${t("usr.none")}</p>`;
+  return `<div class="usr-list">`+items.map(x=>x.html).join("")+`</div>`;
+}
+/* Vendedor sin acceso: editar nombre y comisión, quitarlo, o darle acceso a la app */
+function openVendModal(id){
+  const v=vendedorById(id); if(!v) return;
+  const r=round2((v.rate!=null?v.rate:(db.config.commissionRate||0))*100);
+  const body=`<p class="u-m0 u-mb3 hint">${t("usr.vmd.hint")}</p>
+    <div class="grid-form u-cols2 u-p0">
+      <div class="field"><label>${t("usr.f.name")}</label><input class="inp" id="vmName" value="${esc(v.nombre||v.id)}"></div>
+      <div class="field"><label>${t("usr.f.comm")}</label><input class="inp num" id="vmRate" inputmode="decimal" value="${esc(String(r))}"></div>
+    </div>`;
+  buildModal(t("usr.vmd.title")+" \u00b7 "+(v.nombre||v.id), body, [
+    { cls:"btn danger", label:t("dat.sellers.remove"), act:()=>{
+        if(!confirm(t("dat.cf.delseller",{name:vendedorNombre(id)}))) return;
+        db.config.vendedores=vendedores().filter(x=>x.id!==id); save(); toast(t("dat.tt.sellerremoved"),"warn"); closeModal(); loadUsuarios(); } },
+    { cls:"btn", label:t("usr.vmd.grant"), act:()=>{
+        // precarga el formulario "Nuevo acceso" con el mismo id: al crearlo queda vinculado a este vendedor
+        closeModal();
+        const set=(i,val)=>{ const el=document.getElementById(i); if(el) el.value=val; };
+        set("uNewName", v.nombre||v.id); set("uNewUser", v.id); set("uComm", String(r));
+        const uu=document.getElementById("uNewUser"); if(uu) uu.dataset.vid=v.id;   // v103: queda vinculado a ESTE vendedor aunque su login sea otro
+        const role=document.getElementById("uNewRole"); if(role){ role.value="seller"; role.dispatchEvent(new Event("change")); }
+        const pass=document.getElementById("uNewPass");
+        if(pass){ pass.scrollIntoView({block:"center",behavior:"smooth"}); setTimeout(()=>pass.focus(),250); }
+        toast(t("usr.tt.grant")); } },
+    { cls:"btn primary", label:t("usr.save"), act:()=>{
+        const nombre=(document.getElementById("vmName").value||"").trim()||v.id;
+        const pct=parseNum(document.getElementById("vmRate").value);
+        if(isNaN(pct)){ toast(t("usr.vmd.badrate"),"warn"); return; }
+        v.nombre=nombre; v.rate=Math.min(1,Math.max(0,round2(pct)/100)); save();
+        toast(t("dat.tt.commset",{name:v.nombre,p:round2(v.rate*100)})); closeModal(); loadUsuarios(); } }
+  ]);
+}
+
+async function loadUsuarios(){
+  const box=document.getElementById("usrCards");
+  const orphanBox=document.getElementById("vendOrphans");
+  if(!box) return;
+  try{
+    const j=await apiUsers("GET");
+    _usrCache=j.users||[];
+    box.innerHTML=renderUsrCards(_usrCache);
+    if(orphanBox) orphanBox.innerHTML="";
+    wireUsrCards();
+  }catch(e){
+    box.innerHTML=`<p class="u-alert hint">${t("usr.err")}: ${esc(String(e&&e.message||e))}</p>`;
+  }
+}
+
+function wireUsrCards(){
+  const m=document.getElementById("main");
+  m.querySelectorAll("[data-uedit]").forEach(el=>{
+    el.onclick=()=> openUsuarioModal((_usrCache||[]).find(u=>u.user===el.dataset.uedit));
+    el.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); el.click(); } };
+  });
+  m.querySelectorAll("[data-vedit]").forEach(el=>{
+    el.onclick=()=> openVendModal(el.dataset.vedit);
+    el.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); el.click(); } };
+  });
+  m.querySelectorAll("[data-vname]").forEach(inp=> inp.onchange=()=>{ const v=vendedorById(inp.dataset.vname); if(v){ v.nombre=(inp.value||"").trim()||v.id; save(); toast(t("dat.tt.renamed")); } });
+  m.querySelectorAll("[data-vrate]").forEach(inp=> inp.onchange=()=>{ const v=vendedorById(inp.dataset.vrate); if(!v) return; const pct=parseNum(inp.value); if(isNaN(pct)){ inp.value=String(round2((v.rate||0)*100)); return; } v.rate=Math.min(1,Math.max(0,round2(pct)/100)); save(); toast(t("dat.tt.commset",{name:v.nombre,p:round2(v.rate*100)})); });
+  m.querySelectorAll("[data-vdel]").forEach(b=> b.onclick=()=>{ const id=b.dataset.vdel; if(!confirm(t("dat.cf.delseller",{name:vendedorNombre(id)}))) return; db.config.vendedores=vendedores().filter(v=>v.id!==id); save(); toast(t("dat.tt.sellerremoved"),"warn"); loadUsuarios(); });
+}
+
+/* v86: campo de contraseña con ojito (mismo estilo que el login).
+   autocomplete="new-password" evita que el navegador autocomplete la contraseña
+   guardada del admin y la termine grabando como la del usuario editado. */
+const EYE_SVG = `<svg class="eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg><svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+function passFieldHTML(id, placeholder){
+  return `<div class="pass-wrap"><input class="inp" id="${id}" type="password" autocomplete="new-password" autocapitalize="off" spellcheck="false" placeholder="${esc(placeholder||"")}">
+    <button type="button" class="pass-toggle" data-pt="${id}" title="${esc(t("boot.pass.show"))}" aria-label="${esc(t("boot.pass.show"))}" tabindex="-1">${EYE_SVG}</button></div>`;
+}
+document.addEventListener("click", e=>{
+  const b = e.target.closest && e.target.closest("[data-pt]"); if(!b) return;
+  const inp = document.getElementById(b.dataset.pt); if(!inp) return;
+  const show = inp.type==="password"; inp.type = show ? "text" : "password";
+  b.classList.toggle("show", show);
+  const lbl = show ? t("boot.pass.hide") : t("boot.pass.show"); b.title = lbl; b.setAttribute("aria-label", lbl);
+});
+
+function openUsuarioModal(u){
+  if(!u) return;
+  const v = u.role==="seller" ? vendedorById(u.vendedorId) : null;
+  const rate = v ? round2((v.rate!=null?v.rate:(db.config.commissionRate||0))*100) : round2((db.config.commissionRate||0)*100);
+  const cliOpts=(db.clientes||[]).slice().sort((a,b)=>String(a.nombre||"").localeCompare(String(b.nombre||"")))
+    .map(c=>`<option value="${esc(c.id)}" ${c.id===u.clienteId?"selected":""}>${esc(c.nombre||c.id)}</option>`).join("");
+  const body=`
+    <div class="u-cols2 u-p0 grid-form">
+      <div class="field"><label>${t("usr.f.name")}</label><input class="inp" id="eName" value="${esc(u.name||"")}"></div>
+      <div class="field"><label>${t("usr.f.user")}</label><input class="inp" value="${esc(u.user)}" disabled></div>
+      <div class="u-span2 field"><label for="ePass">${t("usr.md.pass")}</label>${passFieldHTML("ePass", t("usr.md.passph"))}
+        <div class="pm-sub">${t("usr.md.passhint")}</div></div>
+      <div class="field"><label>${t("usr.f.role")}</label>
+        <select class="inp" id="eRole">
+          <option value="seller" ${u.role==="seller"?"selected":""}>${t("usr.role.seller")}</option>
+          <option value="editor" ${u.role==="editor"?"selected":""}>${t("usr.role.editor")}</option>
+          <option value="admin" ${u.role==="admin"?"selected":""}>${t("usr.role.admin")}</option>
+        </select></div>
+      <div class="field um-when-seller" style="${u.role==="seller"?"":"display:none"}"><label>${t("usr.f.comm")}</label><input class="inp num" id="eComm" value="${esc(String(rate))}"></div>
+    </div>`;
+  buildModal(t("usr.md.title")+" \u00b7 "+(u.name||u.user), body, [
+    { cls:"btn danger", label:t("usr.del"), act: async()=>{
+        if(!confirm(t("usr.cf.del",{u:u.user}))) return;
+        try{ await apiUsers("DELETE",null,"?user="+encodeURIComponent(u.user)); toast(t("usr.tt.removed"),"warn"); closeModal(); loadUsuarios(); }
+        catch(e){ toast(String(e&&e.message||e),"warn"); }
+      } },
+    // v108: resetear el 2FA de otro usuario (perdió el celular)
+    ...((u.totp && typeof seg2faReset==="function" && session && u.user!==session.user) ? [{ cls:"btn", label:msgLoc(SEG_TXT.reset), act: async()=>{
+        if(await seg2faReset(u.user)){ closeModal(); loadUsuarios(); } } }] : []),
+    { cls:"btn", label:t("usr.cancel"), act: closeModal },
+    { cls:"btn primary", label:t("usr.save"), act: async()=>{
+        const role=document.getElementById("eRole").value;
+        const name=(document.getElementById("eName").value||"").trim();
+        const pass=document.getElementById("ePass").value||"";
+        const body2={ user:u.user, role, name };
+        if(pass) body2.pass=pass;
+        if(role==="seller"){
+          const vid=(u.role==="seller" && u.vendedorId) ? u.vendedorId : u.user;
+          const commPct=parseNum(document.getElementById("eComm").value);
+          const rate2=isNaN(commPct)?(db.config.commissionRate||0):Math.min(1,Math.max(0,round2(commPct)/100));
+          const vv=vendedorById(vid);
+          if(!vv){ db.config.vendedores=vendedores().concat([{ id:vid, nombre:name||vid, rate:rate2 }]); }
+          else { if(name) vv.nombre=name; if(!isNaN(commPct)) vv.rate=rate2; }
+          save();
+          body2.vendedorId=vid;
+        } else if(role==="store"){
+          const cid=document.getElementById("eCli").value;
+          if(!cid){ toast(t("usr.tt.needcliente"),"warn"); return; }
+          body2.clienteId=cid;
+        }
+        try{ await apiUsers("POST", body2); toast(pass ? t("usr.tt.passchanged",{u:u.user}) : t("usr.tt.added")); closeModal(); loadUsuarios(); }
+        catch(e){ toast(String(e&&e.message||e),"warn"); }
+      } }
+  ]);
+  const er=document.getElementById("eRole");
+  if(er) er.onchange=()=>{
+    const r=er.value;
+    document.querySelectorAll(".um-when-seller").forEach(el=> el.style.display = r==="seller"?"":"none");
+    document.querySelectorAll(".um-when-store").forEach(el=> el.style.display = r==="store"?"":"none");
+  };
+}
+
+function wireUsuariosView(){
+  loadUsuarios();
+  if(typeof wireSeg2fa==="function") wireSeg2fa();
+  const m=document.getElementById("main");
+  const roleSel=document.getElementById("uNewRole");
+  const applyAddRoleUI=()=>{
+    const r=roleSel?roleSel.value:"seller";
+    m.querySelectorAll(".u-when-seller").forEach(el=> el.style.display = r==="seller"?"":"none");
+    m.querySelectorAll(".u-when-store").forEach(el=> el.style.display = r==="store"?"":"none");
+  };
+  if(roleSel) roleSel.onchange=applyAddRoleUI;
+  applyAddRoleUI();
+  const uAdd=document.getElementById("uAdd");
+  if(uAdd) uAdd.onclick=async()=>{
+    const user=(document.getElementById("uNewUser").value||"").trim().toLowerCase().replace(/[^a-z0-9_.-]/g,"");
+    const pass=document.getElementById("uNewPass").value||"";
+    const role=document.getElementById("uNewRole").value;
+    const name=(document.getElementById("uNewName").value||"").trim();
+    if(!user){ toast(t("usr.tt.needuser"),"warn"); return; }
+    const existe=(_usrCache||[]).some(u=>u.user===user);
+    if(!existe && !pass){ toast(t("usr.tt.needpass"),"warn"); return; }
+    const body={ user, role, name };
+    if(pass) body.pass=pass;
+    if(role==="seller"){
+      // v103: si viene de "Pasar a usuario de la app", el vendedor es el de la ficha (su login puede ser distinto)
+      const uuEl=document.getElementById("uNewUser");
+      const vid=(uuEl && uuEl.dataset.vid) || user;
+      const commPct=parseNum(document.getElementById("uComm").value);
+      const rate=isNaN(commPct)?(db.config.commissionRate||0):Math.min(1,Math.max(0,round2(commPct)/100));
+      const vv=vendedorById(vid);
+      if(!vv){ db.config.vendedores=vendedores().concat([{ id:vid, nombre:name||vid, rate }]); }
+      else { if(name) vv.nombre=name; if(!isNaN(commPct)) vv.rate=rate; }
+      save();
+      body.vendedorId=vid;
+    } else if(role==="store"){
+      const cid=document.getElementById("uCli").value;
+      if(!cid){ toast(t("usr.tt.needcliente"),"warn"); return; }
+      body.clienteId=cid;
+    }
+    try{
+      await apiUsers("POST", body);
+      toast(t("usr.tt.added"));
+      ["uNewUser","uNewPass","uNewName","uComm"].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=""; });
+      { const uuEl=document.getElementById("uNewUser"); if(uuEl) delete uuEl.dataset.vid; }
+      loadUsuarios();
+    }catch(e){ toast(String(e&&e.message||e),"warn"); }
+  };
+}
