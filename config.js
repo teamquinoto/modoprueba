@@ -6,5 +6,5 @@
            Ej: "https://modoprueba-api.tuusuario.workers.dev"
    ============================================================ */
 window.APP_CONFIG = {
-  apiUrl: "https://PEGAR-ACA-LA-URL-DEL-WORKER.workers.dev"
+  apiUrl: "https://modoprueba-api.teamquinoto.workers.dev"
 };
