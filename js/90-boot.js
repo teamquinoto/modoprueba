@@ -88,8 +88,8 @@ async function pwaChequeoRespaldo(reg){
 async function pwaForzarVersionNueva(){
   try{
     const regs = await navigator.serviceWorker.getRegistrations();
-    await Promise.all(regs.map(r=> r.unregister()));
-    const keys = await caches.keys(); await Promise.all(keys.map(k=> caches.delete(k)));
+    await Promise.all(regs.filter(r=> !window.APP_BASE || String(r.scope).indexOf(window.APP_BASE)===0).map(r=> r.unregister()));   // solo el de esta app
+    const keys = await caches.keys(); await Promise.all(keys.filter(k=> k.indexOf("modoprueba-")===0).map(k=> caches.delete(k)));
   }catch(e){}
   window._pwaRecargando = true; window.location.reload();
 }
